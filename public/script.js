@@ -917,7 +917,35 @@ async function checkServerStatus() {
       document.getElementById('serverStatus').className = 'badge bg-danger';
   }
 }
-
+// Debug: Countries
+document.addEventListener('DOMContentLoaded', function() {
+  // Debug: Log countries object
+  console.log('Countries object:', countries);
+  
+  // Debug: Check if countries list element exists
+  const countriesList = document.getElementById('countriesList');
+  console.log('Countries list element:', countriesList);
+  
+  // Force populate countries list
+  if (countriesList) {
+    console.log('Populating countries list...');
+    Object.entries(countries).forEach(([code, name]) => {
+      const countryDiv = document.createElement('div');
+      countryDiv.className = 'col-md-6 mb-2';
+      countryDiv.innerHTML = `
+        <div class="card">
+          <div class="card-body py-2">
+            <strong>${code}</strong> - ${name}
+          </div>
+        </div>
+      `;
+      countriesList.appendChild(countryDiv);
+    });
+    console.log('Countries list populated');
+  } else {
+    console.error('Countries list element not found!');
+  }
+});
 // Check server status periodically
 checkServerStatus();
 setInterval(checkServerStatus, 30000); // Check every 30 seconds
