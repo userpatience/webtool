@@ -38,7 +38,7 @@ proxy-name-claimer/
 ### 2. IP-Location
 - Shows Ubi IP-Data, may differ from actual or proxy location
 
-### 3. Availasble Countries
+### 3. Availasble Countries (WIP)
 - Shows all available countries, WIP are not tested
 
 ### 4. Manage Accounts
@@ -55,5 +55,5 @@ If any issues occur:
 ## Notes
 
 - All created accounts are stored locally in the ```accounts.json``` file.
-- The default password for all accounts is *"SiegeHere"**.
+- The default password for all accounts is *"SiegeHere*".
 
