@@ -527,7 +527,7 @@ document.addEventListener('DOMContentLoaded', function() {
     option.value = code;
     option.textContent = `${name} (${code})`;
     countrySelect.appendChild(option);
-  });
+  }};
   
   // Fill countries list on Countries page
   const countriesList = document.getElementById('countriesList');
