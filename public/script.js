@@ -1,6 +1,6 @@
 // Constants
 const API_BASE_URL = '/api'; // Local server endpoint
-const DEFAULT_PASSWORD = "D1gnityHere*";
+const DEFAULT_PASSWORD = "SiegeHere*";
 
 // Country enum with names (from Country.cs and CountryExtensions.cs)
 const countries = {
