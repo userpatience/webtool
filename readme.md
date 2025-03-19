@@ -19,7 +19,7 @@
 ## Directory Structure
 
 ```
-proxy-name-claimer/
+webtool/
 ├── server.js                
 ├── package.json             
 ├── accounts.json            
