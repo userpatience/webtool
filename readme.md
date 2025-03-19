@@ -33,7 +33,7 @@ proxy-name-claimer/
 ### 1. Create Account
 - Input mail (e.g. xyz@knobhead.xyz)
 - Choose a country
-- Creates "guest-xyz" account and saves it to ```accounts.json``` file or accounts tab
+- Creates "guest-xyz" account and saves it to ```accounts.json``` or accounts tab
 
 ### 2. IP-Location
 - Shows Ubi IP-Data, may differ from actual or proxy location
