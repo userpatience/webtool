@@ -55,4 +55,4 @@ If any issues occur:
 ## Notes
 
 - All created accounts are stored locally in the ```accounts.json``` file.
-- The default password for all accounts is *"SiegeHere*"*.
+- The default password for all accounts is ```"SiegeHere*"```.
