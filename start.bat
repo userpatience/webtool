@@ -1,6 +1,6 @@
 @echo off
-title ProxyNameClaimer Web - Starter
-echo ProxyNameClaimer Web - Starter
+title Patience_Webtool - Starter
+echo Patience_Webtool - Starter
 echo.
 echo Checking Node.js installation...
 
@@ -25,7 +25,7 @@ if not exist node_modules (
 )
 
 echo.
-echo Starting ProxyNameClaimer Web...
+echo Starting Patience_Webtool...
 echo.
 echo The application is starting. Please open in your browser: http://localhost:3000
 echo (The browser should open automatically)
