@@ -1,6 +1,14 @@
+// script.js - Merged version to work with both server implementations
+// Special focus on support API functionality
+console.log('Script.js started loading');
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOMContentLoaded event triggered');
+    // Existing code remains the same
+});
 // Constants
 const API_BASE_URL = '/api'; // Local server endpoint
-const DEFAULT_PASSWORD = "SiegeHere*";
+const DEFAULT_PASSWORD = "S1egeHere*"; // Updated consistent password
 
 // Country enum with names (from Country.cs and CountryExtensions.cs)
 const countries = {
@@ -119,7 +127,7 @@ async function loadAccounts() {
           <tr>
             <td>${account.username || '-'}</td>
             <td>${account.email || '-'}</td>
-            <td>${account.password || '-'}</td>
+            <td>${account.password || DEFAULT_PASSWORD}</td>
             <td>${account.country || account.countryCode || '-'}</td>
           </tr>
         `;
@@ -181,7 +189,7 @@ async function getIpLocation(ipAddress, email = null, password = null) {
       body: JSON.stringify({
         ipAddress,
         email,
-        password
+        password: password || DEFAULT_PASSWORD
       })
     });
     
@@ -225,7 +233,7 @@ async function createSupportCase(email, password, subject, description, product,
       },
       body: JSON.stringify({
         email,
-        password,
+        password: password || DEFAULT_PASSWORD,
         subject,
         description,
         product,
@@ -262,7 +270,7 @@ async function loadSupportCases() {
 // Load support case details
 async function loadSupportCaseDetails(caseId, email, password) {
   try {
-    const response = await fetch(`${API_BASE_URL}/support-cases/${caseId}?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`);
+    const response = await fetch(`${API_BASE_URL}/support-cases/${caseId}?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password || DEFAULT_PASSWORD)}`);
     if (!response.ok) {
       throw new Error('Error loading support case details');
     }
@@ -283,7 +291,7 @@ async function addCommentToCase(caseId, email, password, comment) {
       },
       body: JSON.stringify({
         email,
-        password,
+        password: password || DEFAULT_PASSWORD,
         comment
       })
     });
@@ -310,7 +318,7 @@ async function closeSupportCase(caseId, email, password) {
       },
       body: JSON.stringify({
         email,
-        password
+        password: password || DEFAULT_PASSWORD
       })
     });
     
@@ -349,7 +357,7 @@ function updateSupportAccountSelectors() {
         accounts.forEach(account => {
           const option = document.createElement('option');
           option.value = account.email;
-          option.setAttribute('data-password', account.password);
+          option.setAttribute('data-password', account.password || DEFAULT_PASSWORD);
           option.textContent = `${account.username} (${account.email})`;
           selector.appendChild(option);
         });
@@ -377,7 +385,7 @@ function displaySupportCases(cases) {
   
   tbody.innerHTML = '';
   
-  if (cases.length === 0) {
+  if (!cases || cases.length === 0) {
     noCasesMessage.style.display = 'block';
     tbody.innerHTML = '<tr><td colspan="6" class="text-center">No support cases available</td></tr>';
     return;
@@ -442,7 +450,7 @@ function showCaseDetails(caseId, userEmail) {
   
   // Extract account password from selector
   const selectedOption = commentAccountSelector.options[commentAccountSelector.selectedIndex];
-  const password = selectedOption.getAttribute('data-password');
+  const password = selectedOption.getAttribute('data-password') || DEFAULT_PASSWORD;
   
   loadSupportCaseDetails(caseId, userEmail, password)
     .then(caseDetails => {
@@ -473,7 +481,7 @@ function showCaseDetails(caseId, userEmail) {
         noCommentsMessage.style.display = 'none';
         
         caseDetails.comments.forEach(comment => {
-          const commentDate = new Date(comment.createdAt).toLocaleString();
+          const commentDate = new Date(comment.createdAt || new Date()).toLocaleString();
           const commentDiv = document.createElement('div');
           commentDiv.className = 'card mb-2';
           commentDiv.innerHTML = `
@@ -482,7 +490,7 @@ function showCaseDetails(caseId, userEmail) {
               <small class="text-muted">${commentDate}</small>
             </div>
             <div class="card-body">
-              <p class="card-text">${comment.text}</p>
+              <p class="card-text">${comment.text || comment.body || ''}</p>
             </div>
           `;
           commentsContainer.appendChild(commentDiv);
@@ -522,401 +530,474 @@ function showCaseDetails(caseId, userEmail) {
 document.addEventListener('DOMContentLoaded', function() {
   // Fill country list
   const countrySelect = document.getElementById('country');
-  Object.entries(countries).forEach(([code, name]) => {
-    const option = document.createElement('option');
-    option.value = code;
-    option.textContent = `${name} (${code})`;
-    countrySelect.appendChild(option);
-  })};
+  if (countrySelect) {
+    Object.entries(countries).forEach(([code, name]) => {
+      const option = document.createElement('option');
+      option.value = code;
+      option.textContent = `${name} (${code})`;
+      countrySelect.appendChild(option);
+    });
+  }
   
   // Fill countries list on Countries page
   const countriesList = document.getElementById('countriesList');
-  Object.entries(countries).forEach(([code, name]) => {
-    const countryDiv = document.createElement('div');
-    countryDiv.className = 'col-md-6 mb-2';
-    countryDiv.innerHTML = `
-      <div class="card">
-        <div class="card-body py-2">
-          <strong>${code}</strong> - ${name}
+  if (countriesList) {
+    Object.entries(countries).forEach(([code, name]) => {
+      const countryDiv = document.createElement('div');
+      countryDiv.className = 'col-md-6 mb-2';
+      countryDiv.innerHTML = `
+        <div class="card">
+          <div class="card-body py-2">
+            <strong>${code}</strong> - ${name}
+          </div>
         </div>
-      </div>
-    `;
-    countriesList.appendChild(countryDiv);
-  });
+      `;
+      countriesList.appendChild(countryDiv);
+    });
+  }
+  
+  // Load accounts
+  loadAccounts();
+  
+  // Rest of your event listeners...
+});
   
   // Load accounts
   loadAccounts();
   
   // Account creation form
-  document.getElementById('claimForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const mailInput = document.getElementById('mailProvider').value;
-    const country = document.getElementById('country').value;
-    
-    document.getElementById('claimLoading').style.display = 'inline-block';
-    document.getElementById('claimResult').style.display = 'none';
-    
-    try {
-      const account = await createAccount(mailInput, country);
-      document.getElementById('claimOutput').textContent = JSON.stringify(account, null, 2);
-      document.getElementById('claimResult').style.display = 'block';
-    } catch (error) {
-      document.getElementById('claimOutput').textContent = `Error: ${error.message}`;
-      document.getElementById('claimResult').style.display = 'block';
-    } finally {
-      document.getElementById('claimLoading').style.display = 'none';
-    }
-  });
-  
-  // IP Location form
-  document.getElementById('locationForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const ipAddress = document.getElementById('ipAddress').value;
-    const selectedEmail = document.getElementById('accountSelect').value;
-    
-    document.getElementById('locationLoading').style.display = 'inline-block';
-    document.getElementById('locationResult').style.display = 'none';
-    
-    try {
-      let locationData;
+  const claimForm = document.getElementById('claimForm');
+  if (claimForm) {
+    claimForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const mailInput = document.getElementById('mailProvider').value;
+      const country = document.getElementById('country').value;
       
-      if (selectedEmail) {
-        // With account authentication
-        const accounts = await fetch(`${API_BASE_URL}/accounts`).then(res => res.json());
-        const account = accounts.find(a => a.email === selectedEmail);
+      document.getElementById('claimLoading').style.display = 'inline-block';
+      document.getElementById('claimResult').style.display = 'none';
+      
+      try {
+        const account = await createAccount(mailInput, country);
+        document.getElementById('claimOutput').textContent = JSON.stringify(account, null, 2);
+        document.getElementById('claimResult').style.display = 'block';
+      } catch (error) {
+        document.getElementById('claimOutput').textContent = `Error: ${error.message}`;
+        document.getElementById('claimResult').style.display = 'block';
+      } finally {
+        document.getElementById('claimLoading').style.display = 'none';
+      }
+    });
+  }
+  // Fixing the syntax and completing the nested function
+document.addEventListener('DOMContentLoaded', function() {
+  // IP Location form
+  const locationForm = document.getElementById('locationForm');
+  if (locationForm) {
+    locationForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const ipAddress = document.getElementById('ipAddress').value;
+      const selectedEmail = document.getElementById('accountSelect').value;
+      
+      document.getElementById('locationLoading').style.display = 'inline-block';
+      document.getElementById('locationResult').style.display = 'none';
+      
+      try {
+        let locationData;
         
-        if (!account) {
-          throw new Error('Account not found');
+        if (selectedEmail) {
+          // With account authentication
+          const accounts = await fetch(`${API_BASE_URL}/accounts`).then(res => res.json());
+          const account = accounts.find(a => a.email === selectedEmail);
+          
+          if (!account) {
+            throw new Error('Account not found');
+          }
+          
+          locationData = await getIpLocation(ipAddress, account.email, account.password || DEFAULT_PASSWORD);
+        } else {
+          // Without account authentication
+          locationData = await getIpLocation(ipAddress);
         }
         
-        locationData = await getIpLocation(ipAddress, account.email, account.password);
-      } else {
-        // Without account authentication
-        locationData = await getIpLocation(ipAddress);
+        document.getElementById('locationOutput').textContent = JSON.stringify(locationData, null, 2);
+        document.getElementById('locationResult').style.display = 'block';
+      } catch (error) {
+        document.getElementById('locationOutput').textContent = `Error: ${error.message}`;
+        document.getElementById('locationResult').style.display = 'block';
+      } finally {
+        document.getElementById('locationLoading').style.display = 'none';
+      }
+});
+  }
+});
+
+// Countries population
+document.addEventListener('DOMContentLoaded', function() {
+  // Fill country list
+  const countrySelect = document.getElementById('country');
+  if (countrySelect) {
+    Object.entries(countries).forEach(([code, name]) => {
+      const option = document.createElement('option');
+      option.value = code;
+      option.textContent = `${name} (${code})`;
+      countrySelect.appendChild(option);
+    });
+  }
+  
+  // Fill countries list on Countries page
+  const countriesList = document.getElementById('countriesList');
+  if (countriesList) {
+    Object.entries(countries).forEach(([code, name]) => {
+      const countryDiv = document.createElement('div');
+      countryDiv.className = 'col-md-6 mb-2';
+      countryDiv.innerHTML = `
+        <div class="card">
+          <div class="card-body py-2">
+            <strong>${code}</strong> - ${name}
+          </div>
+        </div>
+      `;
+      countriesList.appendChild(countryDiv);
+    });
+  }
+});  
+  // Delete accounts
+  const clearAccountsBtn = document.getElementById('clearAccounts');
+  if (clearAccountsBtn) {
+    clearAccountsBtn.addEventListener('click', async function() {
+      if (confirm('Are you sure you want to delete all accounts? This cannot be undone.')) {
+        await clearAccounts();
+      }
+    });
+  }
+
+  // Support case management
+  const supportForm = document.getElementById('supportForm');
+  if (supportForm) {
+    supportForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const accountSelect = document.getElementById('supportAccount');
+      const email = accountSelect.value;
+      if (!email) {
+        alert('Please select an account first.');
+        return;
       }
       
-      document.getElementById('locationOutput').textContent = JSON.stringify(locationData, null, 2);
-      document.getElementById('locationResult').style.display = 'block';
-    } catch (error) {
-      document.getElementById('locationOutput').textContent = `Error: ${error.message}`;
-      document.getElementById('locationResult').style.display = 'block';
-    } finally {
-      document.getElementById('locationLoading').style.display = 'none';
-    }
-  });
-  
-  // Delete accounts
-  // Delete accounts
-document.getElementById('clearAccounts').addEventListener('click', async function() {
-  if (confirm('Are you sure you want to delete all accounts? This cannot be undone.')) {
-      await clearAccounts();
-  }
-});
-
-// Support case management
-document.getElementById('supportForm').addEventListener('submit', async function(e) {
-  e.preventDefault();
-  
-  const accountSelect = document.getElementById('supportAccount');
-  const email = accountSelect.value;
-  if (!email) {
-      alert('Please select an account first.');
-      return;
-  }
-  
-  const selectedOption = accountSelect.options[accountSelect.selectedIndex];
-  const password = selectedOption.getAttribute('data-password');
-  
-  const subject = document.getElementById('caseSubject').value;
-  const description = document.getElementById('caseDescription').value;
-  const product = document.getElementById('caseProduct').value;
-  const category = document.getElementById('caseCategory').value;
-  
-  document.getElementById('supportLoading').style.display = 'inline-block';
-  
-  try {
-      const result = await createSupportCase(email, password, subject, description, product, category);
-      alert('Support case created successfully: ' + result.id);
+      const selectedOption = accountSelect.options[accountSelect.selectedIndex];
+      const password = selectedOption.getAttribute('data-password') || DEFAULT_PASSWORD;
       
-      // Reset form
-      document.getElementById('supportForm').reset();
+      const subject = document.getElementById('caseSubject').value;
+      const description = document.getElementById('caseDescription').value;
+      const product = document.getElementById('caseProduct').value;
+      const category = document.getElementById('caseCategory').value;
       
-      // Refresh cases
-      loadSupportCases()
+      document.getElementById('supportLoading').style.display = 'inline-block';
+      
+      try {
+        const result = await createSupportCase(email, password, subject, description, product, category);
+        alert('Support case created successfully: ' + result.id);
+        
+        // Reset form
+        document.getElementById('supportForm').reset();
+        
+        // Refresh cases
+        loadSupportCases()
           .then(cases => {
-              displaySupportCases(cases);
+            displaySupportCases(cases);
           });
-          
-  } catch (error) {
-      alert('Error creating support case: ' + error.message);
-  } finally {
-      document.getElementById('supportLoading').style.display = 'none';
+            
+      } catch (error) {
+        alert('Error creating support case: ' + error.message);
+      } finally {
+        document.getElementById('supportLoading').style.display = 'none';
+      }
+    });
   }
-});
 
-// Load support cases button
-document.getElementById('loadCasesBtn').addEventListener('click', function() {
-  document.getElementById('casesLoading').style.display = 'inline-block';
-  
-  loadSupportCases()
-      .then(cases => {
+  // Load support cases button
+  const loadCasesBtn = document.getElementById('loadCasesBtn');
+  if (loadCasesBtn) {
+    loadCasesBtn.addEventListener('click', function() {
+      document.getElementById('casesLoading').style.display = 'inline-block';
+      
+      loadSupportCases()
+        .then(cases => {
           displaySupportCases(cases);
-      })
-      .catch(error => {
+        })
+        .catch(error => {
           alert('Error loading support cases: ' + error.message);
-      })
-      .finally(() => {
+        })
+        .finally(() => {
           document.getElementById('casesLoading').style.display = 'none';
-      });
-});
+        });
+    });
+  }
 
-// Add comment form
-document.getElementById('addCommentForm').addEventListener('submit', async function(e) {
-  e.preventDefault();
-  
-  const caseId = document.getElementById('commentCaseId').value;
-  const commentText = document.getElementById('commentText').value;
-  const accountSelect = document.getElementById('addCommentAccount');
-  const email = accountSelect.value;
-  
-  if (!email) {
-      alert('Please select an account first.');
-      return;
+  // Add comment form
+  const addCommentForm = document.getElementById('addCommentForm');
+  if (addCommentForm) {
+    addCommentForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const caseId = document.getElementById('commentCaseId').value;
+      const commentText = document.getElementById('commentText').value;
+      const accountSelect = document.getElementById('addCommentAccount');
+      const email = accountSelect.value;
+      
+      if (!email) {
+        alert('Please select an account first.');
+        return;
+      }
+      
+      const selectedOption = accountSelect.options[accountSelect.selectedIndex];
+      const password = selectedOption.getAttribute('data-password') || DEFAULT_PASSWORD;
+      
+      document.getElementById('commentLoading').style.display = 'inline-block';
+      
+      try {
+        await addCommentToCase(caseId, email, password, commentText);
+        
+        // Reset form
+        document.getElementById('commentText').value = '';
+        
+        // Refresh case details
+        await showCaseDetails(caseId, email);
+        
+        alert('Comment added successfully');
+      } catch (error) {
+        alert('Error adding comment: ' + error.message);
+      } finally {
+        document.getElementById('commentLoading').style.display = 'none';
+      }
+    });
   }
-  
-  const selectedOption = accountSelect.options[accountSelect.selectedIndex];
-  const password = selectedOption.getAttribute('data-password');
-  
-  document.getElementById('commentLoading').style.display = 'inline-block';
-  
-  try {
-      await addCommentToCase(caseId, email, password, commentText);
-      
-      // Reset form
-      document.getElementById('commentText').value = '';
-      
-      // Refresh case details
-      await showCaseDetails(caseId, email);
-      
-      alert('Comment added successfully');
-  } catch (error) {
-      alert('Error adding comment: ' + error.message);
-  } finally {
-      document.getElementById('commentLoading').style.display = 'none';
-  }
-});
 
-// Close case button
-document.getElementById('closeCaseBtn').addEventListener('click', async function() {
-  if (!confirm('Are you sure you want to close this case?')) {
-      return;
-  }
-  
-  const caseId = document.getElementById('commentCaseId').value;
-  const accountSelect = document.getElementById('addCommentAccount');
-  const email = accountSelect.value;
-  
-  if (!email) {
-      alert('Please select an account first.');
-      return;
-  }
-  
-  const selectedOption = accountSelect.options[accountSelect.selectedIndex];
-  const password = selectedOption.getAttribute('data-password');
-  
-  document.getElementById('caseDetailsLoading').style.display = 'inline-block';
-  document.getElementById('caseDetailsContent').style.display = 'none';
-  
-  try {
-      await closeSupportCase(caseId, email, password);
+  // Close case button
+  const closeCaseBtn = document.getElementById('closeCaseBtn');
+  if (closeCaseBtn) {
+    closeCaseBtn.addEventListener('click', async function() {
+      if (!confirm('Are you sure you want to close this case?')) {
+        return;
+      }
       
-      // Refresh case details
-      await showCaseDetails(caseId, email);
+      const caseId = document.getElementById('commentCaseId').value;
+      const accountSelect = document.getElementById('addCommentAccount');
+      const email = accountSelect.value;
       
-      // Refresh cases list
-      loadSupportCases()
+      if (!email) {
+        alert('Please select an account first.');
+        return;
+      }
+      
+      const selectedOption = accountSelect.options[accountSelect.selectedIndex];
+      const password = selectedOption.getAttribute('data-password') || DEFAULT_PASSWORD;
+      
+      document.getElementById('caseDetailsLoading').style.display = 'inline-block';
+      document.getElementById('caseDetailsContent').style.display = 'none';
+      
+      try {
+        await closeSupportCase(caseId, email, password);
+        
+        // Refresh case details
+        await showCaseDetails(caseId, email);
+        
+        // Refresh cases list
+        loadSupportCases()
           .then(cases => {
-              displaySupportCases(cases);
+            displaySupportCases(cases);
           });
-          
-      alert('Case closed successfully');
-  } catch (error) {
-      alert('Error closing case: ' + error.message);
-      document.getElementById('caseDetailsContent').style.display = 'block';
-  } finally {
-      document.getElementById('caseDetailsLoading').style.display = 'none';
+            
+        alert('Case closed successfully');
+      } catch (error) {
+        alert('Error closing case: ' + error.message);
+        document.getElementById('caseDetailsContent').style.display = 'block';
+      } finally {
+        document.getElementById('caseDetailsLoading').style.display = 'none';
+      }
+    });
   }
-});
 
-// Tab navigation events - handle showing/hiding appropriate content
-document.querySelectorAll('.nav-link').forEach(tab => {
-  tab.addEventListener('click', function() {
+  // Tab navigation events - handle showing/hiding appropriate content
+  document.querySelectorAll('.nav-link').forEach(tab => {
+    tab.addEventListener('click', function() {
       // Hide case details tab by default when switching tabs
       if (this.id !== 'case-details-tab') {
-          document.getElementById('case-details-tab').style.display = 'none';
+        document.getElementById('case-details-tab').style.display = 'none';
       }
+    });
   });
-});
 
-// Initial load of support cases
-loadSupportCases()
-  .then(cases => {
+  // Initial load of support cases
+  const initCasesLoad = async () => {
+    try {
+      const cases = await loadSupportCases();
       displaySupportCases(cases);
-  })
-  .catch(error => {
+    } catch (error) {
       console.error('Error loading initial support cases:', error);
-  });
-
-// Mass creation form
-document.getElementById('massCreateForm').addEventListener('submit', async function(e) {
-  e.preventDefault();
+    }
+  };
   
-  const mailDomain = document.getElementById('massDomain').value;
-  const country = document.getElementById('massCountry').value;
-  const count = parseInt(document.getElementById('massCount').value);
-  
-  if (count <= 0 || count > 100) {
-      alert('Please enter a valid number of accounts (1-100)');
-      return;
+  // Only run if we're on the support page
+  if (document.getElementById('casesTable')) {
+    initCasesLoad();
   }
-  
-  document.getElementById('massLoading').style.display = 'inline-block';
-  document.getElementById('massResult').style.display = 'none';
-  
-  try {
-      const results = [];
+
+  // Mass creation form
+  const massCreateForm = document.getElementById('massCreateForm');
+  if (massCreateForm) {
+    massCreateForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
       
-      for (let i = 0; i < count; i++) {
-          try {
-              const randomString = Math.random().toString(36).substring(2, 8);
-              const mailInput = `mass.${randomString}@${mailDomain}`;
-              
-              const account = await createAccount(mailInput, country);
-              results.push(account);
-              
-              // Update progress
-              document.getElementById('massProgress').textContent = `Created ${i+1}/${count} accounts...`;
-          } catch (error) {
-              console.error(`Error creating account ${i+1}:`, error);
-              results.push({ error: error.message });
-          }
+      const mailDomain = document.getElementById('massDomain').value;
+      const country = document.getElementById('massCountry').value;
+      const count = parseInt(document.getElementById('massCount').value);
+      
+      if (count <= 0 || count > 100) {
+        alert('Please enter a valid number of accounts (1-100)');
+        return;
       }
       
-      document.getElementById('massOutput').textContent = JSON.stringify(results, null, 2);
-      document.getElementById('massResult').style.display = 'block';
-  } catch (error) {
-      document.getElementById('massOutput').textContent = `Error: ${error.message}`;
-      document.getElementById('massResult').style.display = 'block';
-  } finally {
-      document.getElementById('massLoading').style.display = 'none';
-      document.getElementById('massProgress').textContent = '';
-  }
-});
-
-// Export accounts to file
-document.getElementById('exportAccountsBtn').addEventListener('click', async function() {
-  try {
-      const accounts = await fetch(`${API_BASE_URL}/accounts`).then(res => res.json());
+      document.getElementById('massLoading').style.display = 'inline-block';
+      document.getElementById('massResult').style.display = 'none';
       
-      if (accounts.length === 0) {
+      try {
+        const results = [];
+        
+        for (let i = 0; i < count; i++) {
+          try {
+            const randomString = Math.random().toString(36).substring(2, 8);
+            const mailInput = `mass.${randomString}@${mailDomain}`;
+            
+            const account = await createAccount(mailInput, country);
+            results.push(account);
+            
+            // Update progress
+            document.getElementById('massProgress').textContent = `Created ${i+1}/${count} accounts...`;
+          } catch (error) {
+            console.error(`Error creating account ${i+1}:`, error);
+            results.push({ error: error.message });
+          }
+        }
+        
+        document.getElementById('massOutput').textContent = JSON.stringify(results, null, 2);
+        document.getElementById('massResult').style.display = 'block';
+      } catch (error) {
+        document.getElementById('massOutput').textContent = `Error: ${error.message}`;
+        document.getElementById('massResult').style.display = 'block';
+      } finally {
+        document.getElementById('massLoading').style.display = 'none';
+        document.getElementById('massProgress').textContent = '';
+      }
+    });
+  }
+
+  // Export accounts to file
+  const exportAccountsBtn = document.getElementById('exportAccountsBtn');
+  if (exportAccountsBtn) {
+    exportAccountsBtn.addEventListener('click', async function() {
+      try {
+        const accounts = await fetch(`${API_BASE_URL}/accounts`).then(res => res.json());
+        
+        if (accounts.length === 0) {
           alert('No accounts to export');
           return;
-      }
-      
-      // Create a downloadable blob
-      const accountsJson = JSON.stringify(accounts, null, 2);
-      const blob = new Blob([accountsJson], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      
-      // Create a temporary link and trigger download
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `ubisoft-accounts-${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      
-      // Clean up
-      setTimeout(() => {
+        }
+        
+        // Create a downloadable blob
+        const accountsJson = JSON.stringify(accounts, null, 2);
+        const blob = new Blob([accountsJson], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        // Create a temporary link and trigger download
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `ubisoft-accounts-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        
+        // Clean up
+        setTimeout(() => {
           document.body.removeChild(a);
           URL.revokeObjectURL(url);
-      }, 100);
-  } catch (error) {
-      console.error('Error exporting accounts:', error);
-      alert('Error exporting accounts: ' + error.message);
+        }, 100);
+      } catch (error) {
+        console.error('Error exporting accounts:', error);
+        alert('Error exporting accounts: ' + error.message);
+      }
+    });
   }
-});
 
-// Import accounts from file
-document.getElementById('importAccountsBtn').addEventListener('click', function() {
-  const fileInput = document.createElement('input');
-  fileInput.type = 'file';
-  fileInput.accept = 'application/json';
-  
-  fileInput.addEventListener('change', async function() {
-      if (!this.files || this.files.length === 0) return;
+  // Import accounts from file
+  const importAccountsBtn = document.getElementById('importAccountsBtn');
+  if (importAccountsBtn) {
+    importAccountsBtn.addEventListener('click', function() {
+      const fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.accept = 'application/json';
       
-      const file = this.files[0];
-      const reader = new FileReader();
-      
-      reader.onload = async function(e) {
+      fileInput.addEventListener('change', async function() {
+        if (!this.files || this.files.length === 0) return;
+        
+        const file = this.files[0];
+        const reader = new FileReader();
+        
+        reader.onload = async function(e) {
           try {
-              const accounts = JSON.parse(e.target.result);
-              
-              if (!Array.isArray(accounts)) {
-                  throw new Error('Invalid accounts format');
-              }
-              
-              const response = await fetch(`${API_BASE_URL}/import-accounts`, {
-                  method: 'POST',
-                  headers: {
-                      'Content-Type': 'application/json'
-                  },
-                  body: JSON.stringify({ accounts })
-              });
-              
-              if (!response.ok) {
-                  const errorData = await response.json();
-                  throw new Error(errorData.error || 'Error importing accounts');
-              }
-              
-              await loadAccounts(); // Reload accounts
-              alert(`Successfully imported ${accounts.length} accounts`);
+            const accounts = JSON.parse(e.target.result);
+            
+            if (!Array.isArray(accounts)) {
+              throw new Error('Invalid accounts format');
+            }
+            
+            const response = await fetch(`${API_BASE_URL}/import-accounts`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ accounts })
+            });
+            
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(errorData.error || 'Error importing accounts');
+            }
+            
+            await loadAccounts(); // Reload accounts
+            alert(`Successfully imported ${accounts.length} accounts`);
           } catch (error) {
-              console.error('Error importing accounts:', error);
-              alert('Error importing accounts: ' + error.message);
+            console.error('Error importing accounts:', error);
+            alert('Error importing accounts: ' + error.message);
           }
-      };
+        };
+        
+        reader.readAsText(file);
+      });
       
-      reader.readAsText(file);
-  });
-  
-  fileInput.click();
-});
+      fileInput.click();
+    });
+  }
 
-// Initialize tooltips and other Bootstrap components
-if (typeof bootstrap !== 'undefined') {
-  const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-  tooltipTriggerList.map(function (tooltipTriggerEl) {
-      return new bootstrap.Tooltip(tooltipTriggerEl);
-  });
-}
-
-// Check server status on page load
-async function checkServerStatus() {
-  try {
+  // Check server status
+  const checkServerStatus = async () => {
+    const serverStatusEl = document.getElementById('serverStatus');
+    if (!serverStatusEl) return;
+    
+    try {
       const response = await fetch(`${API_BASE_URL}/status`);
       if (response.ok) {
-          document.getElementById('serverStatus').textContent = 'Connected';
-          document.getElementById('serverStatus').className = 'badge bg-success';
+        serverStatusEl.textContent = 'Connected';
+        serverStatusEl.className = 'badge bg-success';
       } else {
-          document.getElementById('serverStatus').textContent = 'Error';
-          document.getElementById('serverStatus').className = 'badge bg-danger';
+        serverStatusEl.textContent = 'Error';
+        serverStatusEl.className = 'badge bg-danger';
       }
-  } catch (error) {
-      document.getElementById('serverStatus').textContent = 'Disconnected';
-      document.getElementById('serverStatus').className = 'badge bg-danger';
-  }
-}
+    } catch (error) {
+      serverStatusEl.textContent = 'Disconnected';
+      serverStatusEl.className = 'badge bg-danger';
+    }
+  };
+;
 // Debug: Countries
 document.addEventListener('DOMContentLoaded', function() {
   // Debug: Log countries object
@@ -948,4 +1029,5 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 // Check server status periodically
 checkServerStatus();
-setInterval(checkServerStatus, 30000); // Check every 30 seconds
+setInterval(checkServerStatus, 30000); 
+// Check every 30 seconds;
